@@ -20,6 +20,9 @@ dependencies = [
     "openai>=1.40",
 ]
 
+[project.scripts]
+threatweave = "threatweave.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.2",
