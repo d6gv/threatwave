@@ -1,0 +1,32 @@
+# Secrets and local environment
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Test / tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Real intelligence data must never be committed.
+data/**
+!data/samples/
+!data/samples/**
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
