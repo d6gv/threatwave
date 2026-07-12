@@ -1,0 +1,22 @@
+Threat Report: APT-Sample Targets Financial Services
+
+Summary
+-------
+Our research team has tracked a new intrusion campaign attributed to the
+threat actor APT-Sample, primarily targeting the financial services and
+banking sectors across several regions.
+
+Initial access was achieved through spearphishing emails carrying malicious
+attachments (MITRE ATT&CK T1566.001). Once executed, the implant established
+command-and-control over standard web protocols (T1071.001).
+
+Indicators of Compromise
+------------------------
+The following synthetic indicators were observed during the investigation:
+
+  - Command-and-control IP:   198.51.100.23
+  - Staging domain:           staging.malicious.example
+  - Payload delivery URL:     http://malicious.example/update/payload.bin
+  - Dropper (SHA-256):        e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+Defenders should treat all of the above as malicious and block accordingly.
