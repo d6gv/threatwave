@@ -9,16 +9,18 @@ similarity with embeddings (a later phase).
 ## Architecture principle
 
 Structural correlation is **deterministic**: a graph, a JOIN, an edge traversal.
-AI is reserved for exactly three ingestion-time jobs:
+AI is reserved for exactly three jobs:
 
-1. extracting IOCs/TTPs from free text,
-2. generating embeddings,
-3. writing explanatory narratives on demand.
+1. extracting TTPs/context from free text (at ingestion),
+2. generating embeddings (at ingestion),
+3. writing explanatory narratives (on demand, at query time).
 
-An LLM is **never** used to correlate IOCs or decide structural relationships —
-that is graph logic, and putting AI there would add cost and hallucinations to
-data that must be exact. All AI access goes through a single, swappable
-`LLMProvider` interface (`extract` / `embed` / `narrate`).
+The first two touch each datum once, at ingestion; the third runs only when a
+narrative is explicitly requested. An LLM is **never** used to correlate IOCs or
+decide structural relationships — that is graph logic, and putting AI there would
+add cost and hallucinations to data that must be exact. All AI access goes
+through a single, swappable `LLMProvider` interface (`extract` / `embed` /
+`narrate`).
 
 **Hybrid extraction.** Obvious IOCs (IPs, domains, hashes, URLs) are pulled by
 the deterministic regex parser at zero token cost. The LLM is used *only* for
@@ -30,6 +32,13 @@ ingestion, cached in pgvector) let the graph relate campaigns that read alike bu
 share no exact IOC. This *augments* the exact-match structural correlation with
 scored `semantic_similarity` edges — it never replaces it, and the AI still only
 touches each datum once, at ingestion.
+
+**Narratives are on-demand.** Natural-language explanations are generated only
+when explicitly requested (`GET /api/narrative`), never during ingestion or
+routine queries — so their cost scales with use, not data volume. The narrative
+is grounded solely in the already-computed subgraph (the model sees only that
+evidence), and every response is stamped with a disclaimer that it is indicative
+and requires analyst verification.
 
 ## Stack
 
@@ -51,7 +60,7 @@ src/threatweave/
 ├── vector/              # VectorStore port + pgvector and in-memory adapters + factory
 ├── correlation/         # correlate() (structural + semantic) and similar()
 ├── ingest.py            # OTX payload / extracted document -> graph (+ cached embeddings)
-├── llm/                 # LLMProvider interface + OpenAI provider, Ollama stub, cost, factory
+├── llm/                 # LLMProvider interface + OpenAI provider, Ollama stub, cost, narrative, factory
 ├── cli.py               # `threatweave` CLI (ingest-doc)
 └── api/                 # FastAPI app and routes
 ```
@@ -76,8 +85,10 @@ set the LLM provider: `LLM_PROVIDER=openai`, `LLM_API_KEY=<key>`,
 `LLM_MODEL=gpt-4o-mini` (plus optional `LLM_MAX_INPUT_CHARS`,
 `LLM_MAX_OUTPUT_TOKENS`, `LLM_MAX_RETRIES`). For semantic similarity, enable a
 vector backend: `VECTOR_BACKEND=pgvector` (or `memory`), with
-`LLM_EMBED_MODEL=text-embedding-3-small` and `LLM_EMBED_DIM=1536`. See
-[.env.example](.env.example) for the full list.
+`LLM_EMBED_MODEL=text-embedding-3-small` and `LLM_EMBED_DIM=1536`. Narratives use
+a separate, higher-quality model, configurable via
+`LLM_NARRATIVE_MODEL=gpt-5.4-mini`. See [.env.example](.env.example) for the full
+list.
 
 ## Install (development)
 
@@ -126,6 +137,7 @@ the running Neo4j (requires a valid `OTX_API_KEY`).
 | GET    | `/health`         | Liveness probe.                                        |
 | GET    | `/api/correlate`  | Correlation subgraph for an indicator.                 |
 | GET    | `/api/similar`    | Semantic nearest neighbours of an entity.              |
+| GET    | `/api/narrative`  | On-demand natural-language explanation for an indicator.|
 
 `GET /api/correlate?ioc=<value>&depth=<1..4>` — the indicator type is inferred
 from the value (IP, domain, hash or URL). Returns `404` if the indicator is not
@@ -137,6 +149,13 @@ Add `&semantic=true` (with a vector backend configured) to also include scored
 similar entities as `[{ "id", "label", "score" }]`, e.g.
 `id=campaign:<name>`. Responds `503` if no vector backend is configured, or
 `404` if the entity has no stored embedding.
+
+`GET /api/narrative?ioc=<value>` — computes the correlation subgraph, then asks
+the LLM to explain it, returning `{ "ioc", "narrative", "model" }` (the `model`
+field records which model produced the text). Add `&semantic=true` to also
+consider similarity edges. Responds `404` if the indicator is absent, or `503`
+if no LLM provider is configured. The narrative always ends with a
+verification disclaimer.
 
 ## Ingesting documents (CLI)
 
@@ -192,4 +211,8 @@ ruff check .    # lint
   in-memory test backend). Adds `similar(entity, k)`, scored
   `semantic_similarity` edges in `correlate()`, and a `GET /api/similar`
   endpoint — relating campaigns that share no exact IOC.
-- [ ] Phase 4 — On-demand explanatory narratives (`narrate`).
+- [x] **Phase 4 — On-demand narratives**: `narrate()` explains a correlated
+  subgraph in natural language via a separate, higher-quality model
+  (`LLM_NARRATIVE_MODEL`), grounded solely in the subgraph evidence and stamped
+  with a verification disclaimer. Exposed at `GET /api/narrative` — generated
+  only on request, so cost scales with use, not data volume.
