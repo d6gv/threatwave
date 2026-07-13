@@ -66,6 +66,25 @@ def test_environment_overrides_dotenv(
     assert Settings().neo4j.password == "from-env"
 
 
+def test_postgres_dsn_escapes_special_characters() -> None:
+    """Regression: '@ / :' in credentials must not corrupt the DSN URI.
+
+    Unescaped, the URI parser splits at the wrong '@' and silently yields a
+    wrong host/password instead of erroring.
+    """
+    import psycopg
+
+    from threatweave.config import PostgresSettings
+
+    settings = PostgresSettings(user="u@er", password="p@ss/w:rd", db="threatweave")
+    parsed = psycopg.conninfo.conninfo_to_dict(settings.dsn)
+
+    assert parsed["user"] == "u@er"
+    assert parsed["password"] == "p@ss/w:rd"
+    assert parsed["host"] == "localhost"
+    assert parsed["dbname"] == "threatweave"
+
+
 def test_defaults_without_dotenv(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Without a .env file everything falls back to defaults."""
     monkeypatch.chdir(tmp_path)

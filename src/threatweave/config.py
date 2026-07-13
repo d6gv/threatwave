@@ -8,6 +8,7 @@ list of expected variable names.
 from __future__ import annotations
 
 from functools import lru_cache
+from urllib.parse import quote
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -56,11 +57,16 @@ class PostgresSettings(BaseSettings):
 
     @property
     def dsn(self) -> str:
-        """Return a libpq-style connection string."""
-        return (
-            f"postgresql://{self.user}:{self.password}"
-            f"@{self.host}:{self.port}/{self.db}"
-        )
+        """Return a libpq-style connection string.
+
+        User, password and database name are URL-escaped: characters like
+        ``@ / :`` in a password would otherwise make the URI parse silently
+        wrong (splitting at the wrong ``@``), not just fail.
+        """
+        user = quote(self.user, safe="")
+        password = quote(self.password, safe="")
+        db = quote(self.db, safe="")
+        return f"postgresql://{user}:{password}@{self.host}:{self.port}/{db}"
 
 
 class OTXSettings(BaseSettings):
