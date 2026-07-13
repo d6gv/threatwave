@@ -5,9 +5,11 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
 
+from threatweave.config import get_settings
 from threatweave.correlation.correlate import correlate
 from threatweave.correlation.similar import similar
 from threatweave.graph.base import GraphStore
+from threatweave.llm.base import LLMProvider
 from threatweave.models.graph import Subgraph
 from threatweave.vector.base import VectorStore
 
@@ -24,12 +26,25 @@ def _vector_store(request: Request) -> VectorStore | None:
     return request.app.state.vector_store
 
 
+def _provider(request: Request) -> LLMProvider | None:
+    """Return the LLM provider, or ``None`` when none is configured."""
+    return request.app.state.provider
+
+
 class SimilarNeighbor(BaseModel):
     """One semantic neighbour returned by ``/api/similar``."""
 
     id: str
     label: str | None
     score: float
+
+
+class NarrativeResponse(BaseModel):
+    """Response of ``/api/narrative``."""
+
+    ioc: str
+    narrative: str
+    model: str
 
 
 @router.get("/health")
@@ -93,3 +108,38 @@ def get_similar(
         )
         for neighbor in neighbors
     ]
+
+
+@router.get("/api/narrative", response_model=NarrativeResponse)
+def get_narrative(
+    request: Request,
+    ioc: str = Query(..., description="Indicator value: IP, domain, hash or URL."),
+    depth: int = Query(1, ge=1, le=4, description="Relationship hops to include."),
+    semantic: bool = Query(False, description="Also consider semantic-similarity edges."),
+    k: int = Query(5, ge=1, le=50, description="Max semantic neighbours per campaign."),
+    min_score: float = Query(0.0, ge=0.0, le=1.0, description="Min cosine score."),
+) -> NarrativeResponse:
+    """Generate an on-demand natural-language narrative for an indicator.
+
+    Computes the correlation subgraph with the existing deterministic logic, then
+    asks the LLM to explain it — grounded solely in that subgraph. This is the
+    only place narratives are generated, so cost scales with use, not data
+    volume. Responds 404 if the indicator is absent, 503 if no LLM is configured.
+    """
+    provider = _provider(request)
+    if provider is None:
+        raise HTTPException(
+            status_code=503,
+            detail="narrative generation is disabled (no LLM provider configured)",
+        )
+
+    vector_store = _vector_store(request) if semantic else None
+    subgraph = correlate(
+        _store(request), ioc, depth=depth, vector_store=vector_store, k=k, min_score=min_score
+    )
+    if not subgraph.nodes:
+        raise HTTPException(status_code=404, detail=f"IOC not found in graph: {ioc}")
+
+    narrative = provider.narrate(subgraph)
+    model = getattr(provider, "narrative_model", None) or get_settings().llm.narrative_model
+    return NarrativeResponse(ioc=ioc, narrative=narrative, model=model)

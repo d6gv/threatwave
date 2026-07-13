@@ -149,6 +149,11 @@ class OpenAIProvider(LLMProvider):
         ordered = sorted(response.data, key=lambda item: item.index)
         return [list(item.embedding) for item in ordered]
 
+    @property
+    def narrative_model(self) -> str:
+        """The model used by :meth:`narrate` (for response traceability)."""
+        return self._narrative_model
+
     def narrate(self, subgraph: Subgraph) -> str:
         """Write a narrative explaining a correlated subgraph.
 

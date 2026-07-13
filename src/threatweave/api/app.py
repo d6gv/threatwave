@@ -14,6 +14,8 @@ from threatweave.config import Settings, get_settings
 from threatweave.graph.base import GraphStore
 from threatweave.graph.factory import build_store
 from threatweave.ingest import ingest_otx_payload
+from threatweave.llm.base import LLMProvider
+from threatweave.llm.factory import get_provider
 from threatweave.vector.base import VectorStore
 from threatweave.vector.factory import build_vector_store
 
@@ -36,6 +38,19 @@ def _build_store(settings: Settings) -> GraphStore:
     return store
 
 
+def _build_provider(settings: Settings) -> LLMProvider | None:
+    """Build the LLM provider, or ``None`` when none is configured.
+
+    The narrative endpoint needs a provider; other endpoints do not, so a
+    missing provider is not fatal — it just disables narration (503).
+    """
+    try:
+        return get_provider(settings)
+    except ValueError:
+        logger.info("no LLM provider configured; narrative endpoint disabled")
+        return None
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Create the graph store on startup and close it on shutdown.
@@ -50,6 +65,8 @@ async def lifespan(app: FastAPI):
     owns_vector_store = app.state.vector_store is None
     if owns_vector_store:
         app.state.vector_store = build_vector_store(settings)
+    if app.state.provider is None:
+        app.state.provider = _build_provider(settings)
     try:
         yield
     finally:
@@ -60,9 +77,11 @@ async def lifespan(app: FastAPI):
 
 
 def create_app(
-    store: GraphStore | None = None, vector_store: VectorStore | None = None
+    store: GraphStore | None = None,
+    vector_store: VectorStore | None = None,
+    provider: LLMProvider | None = None,
 ) -> FastAPI:
-    """Build the FastAPI app, optionally with a graph/vector store injected."""
+    """Build the FastAPI app, optionally with stores/provider injected."""
     app = FastAPI(
         title="ThreatWeave",
         version="0.1.0",
@@ -71,6 +90,7 @@ def create_app(
     )
     app.state.store = store
     app.state.vector_store = vector_store
+    app.state.provider = provider
     app.include_router(router)
     return app
 
