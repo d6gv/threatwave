@@ -81,3 +81,11 @@ def test_cost_estimation_known_and_unknown() -> None:
     # 1M input tokens at $0.15/Mtok == $0.15; unknown model -> None (tolerant).
     assert estimate_cost("gpt-4o-mini", Usage(1_000_000, 0)) == pytest.approx(0.15)
     assert estimate_cost("made-up-model", Usage(1000, 1000)) is None
+
+
+def test_cost_estimation_narrative_model() -> None:
+    # gpt-5.4-mini: $0.75/Mtok input + $4.50/Mtok output. 1M in + 1M out.
+    cost = estimate_cost("gpt-5.4-mini", Usage(1_000_000, 1_000_000))
+    assert cost == pytest.approx(0.75 + 4.50)
+    # It is priced, not "unknown".
+    assert cost is not None

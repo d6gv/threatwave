@@ -20,6 +20,10 @@ _PRICES_PER_MTOK: dict[str, tuple[float, float]] = {
     "gpt-4o": (2.50, 10.00),
     "gpt-4.1-mini": (0.40, 1.60),
     "gpt-4.1": (2.00, 8.00),
+    # Narrative models (OpenAI pricing as of 2026-07; revisit every few months).
+    "gpt-5.4-mini": (0.75, 4.50),
+    "gpt-5.4": (2.50, 15.00),
+    "gpt-5.5": (5.00, 30.00),
     # Embedding models bill input tokens only (no completion tokens).
     "text-embedding-3-small": (0.02, 0.00),
     "text-embedding-3-large": (0.13, 0.00),
