@@ -71,6 +71,10 @@ is grounded solely in the already-computed subgraph (the model sees only that
 evidence), and every response is stamped with a disclaimer that it is indicative
 and requires analyst verification.
 
+<p align="center">
+  <img src="assets/pipeline.svg" alt="ThreatWeave pipeline: sources feed ingestion; regex and LLM process in parallel and merge; Neo4j and pgvector store; deterministic correlation serves the FastAPI endpoints; narratives are generated only on demand" width="720">
+</p>
+
 ## Stack
 
 - Python 3.11+, FastAPI

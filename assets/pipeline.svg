@@ -1,0 +1,148 @@
+<svg viewBox="0 0 800 1060" xmlns="http://www.w3.org/2000/svg" role="img"
+     font-family="Arial, Helvetica, sans-serif">
+  <title>ThreatWeave pipeline</title>
+  <desc>Vertical flow from data sources to on-demand narratives. Red-marked stages
+  call an LLM (cost per token, once per datum at ingest); neutral stages are
+  deterministic with no per-query cost; dashed boxes are roadmap items.</desc>
+
+  <defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#55555e"/>
+    </marker>
+  </defs>
+
+  <!-- Unifying dark card (matches the logo) so it reads on any GitHub theme -->
+  <rect x="8" y="8" width="784" height="1044" rx="20" fill="#111114" stroke="#232326" stroke-width="2"/>
+
+  <!-- ===================== SOURCES ===================== -->
+  <text x="50" y="56" fill="#8a8a90" font-size="11" font-weight="700" letter-spacing="2">SOURCES</text>
+
+  <rect x="50" y="68" width="330" height="92" rx="10" fill="#1a1a1f" stroke="#303036" stroke-width="1.5"/>
+  <text x="68" y="94" fill="#f2f2f4" font-size="13.5" font-weight="600">Structured feeds</text>
+  <text x="68" y="114" fill="#a8a8b0" font-size="10.5">AlienVault OTX</text>
+  <text x="68" y="130" fill="#6f6f78" font-size="10.5">abuse.ch · VirusTotal — roadmap</text>
+  <text x="68" y="146" fill="#a8a8b0" font-size="10.5">→ IOCs: IP, hash, domain, URL</text>
+
+  <rect x="420" y="68" width="330" height="92" rx="10" fill="#1a1a1f" stroke="#303036" stroke-width="1.5"/>
+  <text x="438" y="94" fill="#f2f2f4" font-size="13.5" font-weight="600">Unstructured text</text>
+  <text x="438" y="114" fill="#a8a8b0" font-size="10.5">Threat blogs · CERT advisories</text>
+  <text x="438" y="130" fill="#a8a8b0" font-size="10.5">via ingest-doc: URL · file · text</text>
+  <text x="438" y="146" fill="#a8a8b0" font-size="10.5">→ context: actor, TTPs, sectors</text>
+
+  <path d="M215 160 L215 196" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+  <path d="M585 160 L585 196" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+
+  <!-- ===================== INGEST ===================== -->
+  <text x="50" y="192" fill="#8a8a90" font-size="11" font-weight="700" letter-spacing="2">INGEST</text>
+  <rect x="50" y="200" width="700" height="40" rx="10" fill="#1a1a1f" stroke="#303036" stroke-width="1.5"/>
+  <text x="400" y="225" text-anchor="middle" fill="#f2f2f4" font-size="13.5" font-weight="600">Normalize · dedupe · idempotent upserts</text>
+
+  <path d="M160 240 L160 280" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+  <path d="M400 240 L400 280" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+  <path d="M640 240 L640 280" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+
+  <!-- ===================== PROCESSING ===================== -->
+  <text x="50" y="272" fill="#8a8a90" font-size="11" font-weight="700" letter-spacing="2">PROCESSING</text>
+
+  <rect x="50" y="284" width="220" height="96" rx="10" fill="#1a1a1f" stroke="#303036" stroke-width="1.5"/>
+  <text x="68" y="310" fill="#f2f2f4" font-size="13.5" font-weight="600">Regex / parser</text>
+  <text x="68" y="330" fill="#a8a8b0" font-size="10.5">IOCs: IP, hash, domain, URL</text>
+  <text x="68" y="346" fill="#a8a8b0" font-size="10.5">refang · validate · dedupe</text>
+  <text x="68" y="362" fill="#a8a8b0" font-size="10.5">deterministic — no AI</text>
+
+  <rect x="290" y="284" width="220" height="96" rx="10" fill="#1a1a1f" stroke="#ff5145" stroke-width="1.8"/>
+  <rect x="470" y="292" width="30" height="15" rx="7" fill="#ff5145"/>
+  <text x="485" y="303" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="700">AI</text>
+  <text x="308" y="310" fill="#f2f2f4" font-size="13.5" font-weight="600">extract() — LLM</text>
+  <text x="308" y="330" fill="#a8a8b0" font-size="10.5">TTPs (MITRE ATT&amp;CK),</text>
+  <text x="308" y="346" fill="#a8a8b0" font-size="10.5">actor, target sectors</text>
+  <text x="308" y="362" fill="#a8a8b0" font-size="10.5">LLM-only — never IOCs</text>
+
+  <rect x="530" y="284" width="220" height="96" rx="10" fill="#1a1a1f" stroke="#ff5145" stroke-width="1.8"/>
+  <rect x="710" y="292" width="30" height="15" rx="7" fill="#ff5145"/>
+  <text x="725" y="303" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="700">AI</text>
+  <text x="548" y="310" fill="#f2f2f4" font-size="13.5" font-weight="600">embed() — LLM</text>
+  <text x="548" y="330" fill="#a8a8b0" font-size="10.5">one vector per document,</text>
+  <text x="548" y="346" fill="#a8a8b0" font-size="10.5">cached by content hash</text>
+  <text x="548" y="362" fill="#a8a8b0" font-size="10.5">computed once, at ingest</text>
+
+  <path d="M160 380 L195 408" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+  <path d="M400 380 L335 408" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+  <path d="M640 380 L600 496" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+
+  <!-- ===================== MERGE ===================== -->
+  <rect x="50" y="408" width="460" height="40" rx="10" fill="#1a1a1f" stroke="#303036" stroke-width="1.5"/>
+  <text x="280" y="433" text-anchor="middle" fill="#f2f2f4" font-size="13.5" font-weight="600">Merge: regex IOCs + LLM context → DocumentIntel</text>
+
+  <path d="M280 448 L230 496" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+
+  <!-- ===================== STORAGE ===================== -->
+  <text x="50" y="484" fill="#8a8a90" font-size="11" font-weight="700" letter-spacing="2">STORAGE</text>
+
+  <rect x="50" y="496" width="340" height="72" rx="10" fill="#1a1a1f" stroke="#303036" stroke-width="1.5"/>
+  <text x="68" y="522" fill="#f2f2f4" font-size="13.5" font-weight="600">Neo4j — graph</text>
+  <text x="68" y="542" fill="#a8a8b0" font-size="10.5">IOC · Actor · Campaign · TTP · Sector</text>
+  <text x="68" y="558" fill="#a8a8b0" font-size="10.5">deterministic relationships</text>
+
+  <rect x="410" y="496" width="340" height="72" rx="10" fill="#1a1a1f" stroke="#303036" stroke-width="1.5"/>
+  <text x="428" y="522" fill="#f2f2f4" font-size="13.5" font-weight="600">pgvector — embeddings</text>
+  <text x="428" y="542" fill="#a8a8b0" font-size="10.5">Postgres + vector extension</text>
+  <text x="428" y="558" fill="#a8a8b0" font-size="10.5">cosine nearest-neighbour search</text>
+
+  <path d="M220 568 L220 612" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+  <path d="M580 568 L580 612" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+
+  <!-- ===================== CORRELATION ===================== -->
+  <text x="50" y="604" fill="#8a8a90" font-size="11" font-weight="700" letter-spacing="2">CORRELATION</text>
+
+  <rect x="50" y="616" width="340" height="72" rx="10" fill="#1a1a1f" stroke="#303036" stroke-width="1.5"/>
+  <text x="68" y="642" fill="#f2f2f4" font-size="13.5" font-weight="600">Graph traversal</text>
+  <text x="68" y="662" fill="#a8a8b0" font-size="10.5">correlate(): shared IOCs · PART_OF ·</text>
+  <text x="68" y="678" fill="#a8a8b0" font-size="10.5">ATTRIBUTED_TO · USES · TARGETS</text>
+
+  <rect x="410" y="616" width="340" height="72" rx="10" fill="#1a1a1f" stroke="#303036" stroke-width="1.5"/>
+  <text x="428" y="642" fill="#f2f2f4" font-size="13.5" font-weight="600">Semantic similarity</text>
+  <text x="428" y="662" fill="#a8a8b0" font-size="10.5">similar(): scored vector neighbours —</text>
+  <text x="428" y="678" fill="#a8a8b0" font-size="10.5">no shared IOC required</text>
+
+  <path d="M220 688 L220 732" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+  <path d="M580 688 L580 732" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+
+  <!-- ===================== API ===================== -->
+  <text x="50" y="726" fill="#8a8a90" font-size="11" font-weight="700" letter-spacing="2">API</text>
+  <rect x="50" y="736" width="700" height="40" rx="10" fill="#1a1a1f" stroke="#303036" stroke-width="1.5"/>
+  <text x="400" y="761" text-anchor="middle" fill="#f2f2f4" font-size="13.5" font-weight="600">FastAPI REST — /api/correlate · /api/similar · /api/narrative</text>
+
+  <path d="M220 776 L220 820" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+  <path d="M580 776 L580 820" marker-end="url(#arw)" fill="none" stroke="#55555e" stroke-width="1.6"/>
+
+  <!-- ===================== ON DEMAND ===================== -->
+  <text x="50" y="812" fill="#8a8a90" font-size="11" font-weight="700" letter-spacing="2">ON DEMAND</text>
+
+  <rect x="50" y="824" width="340" height="76" rx="10" fill="#1a1a1f" stroke="#4a4a52" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <rect x="306" y="832" width="66" height="15" rx="7" fill="#3a3a40"/>
+  <text x="339" y="843" text-anchor="middle" fill="#c9c9cf" font-size="8" font-weight="700">ROADMAP</text>
+  <text x="68" y="850" fill="#c9c9cf" font-size="13.5" font-weight="600">Graph visualization UI</text>
+  <text x="68" y="870" fill="#8a8a90" font-size="10.5">explore campaigns, actors and</text>
+  <text x="68" y="886" fill="#8a8a90" font-size="10.5">relations interactively</text>
+
+  <rect x="410" y="824" width="340" height="76" rx="10" fill="#1a1a1f" stroke="#ff5145" stroke-width="1.8"/>
+  <rect x="710" y="832" width="30" height="15" rx="7" fill="#ff5145"/>
+  <text x="725" y="843" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="700">AI</text>
+  <text x="428" y="850" fill="#f2f2f4" font-size="13.5" font-weight="600">narrate() — LLM</text>
+  <text x="428" y="870" fill="#a8a8b0" font-size="10.5">“why is this one campaign?” — grounded</text>
+  <text x="428" y="886" fill="#a8a8b0" font-size="10.5">in the subgraph · analyst disclaimer</text>
+
+  <!-- ===================== LEGEND ===================== -->
+  <rect x="50" y="924" width="700" height="104" rx="12" fill="#16161a" stroke="#232326" stroke-width="1.5"/>
+
+  <rect x="70" y="948" width="22" height="15" rx="5" fill="#1a1a1f" stroke="#ff5145" stroke-width="1.8"/>
+  <text x="102" y="960" fill="#a8a8b0" font-size="11"><tspan fill="#ff6a60" font-weight="700">AI</tspan> — model call · cost per token</text>
+  <rect x="300" y="948" width="22" height="15" rx="5" fill="#1a1a1f" stroke="#303036" stroke-width="1.5"/>
+  <text x="332" y="960" fill="#a8a8b0" font-size="11">deterministic · no per-query cost</text>
+  <rect x="545" y="948" width="22" height="15" rx="5" fill="#1a1a1f" stroke="#4a4a52" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="577" y="960" fill="#a8a8b0" font-size="11">roadmap</text>
+
+  <text x="70" y="990" fill="#a8a8b0" font-size="11">AI touches each datum <tspan fill="#ff6a60" font-weight="700">once, at ingest</tspan> (extract + embed, cached by hash); narrate() runs <tspan fill="#ff6a60" font-weight="700">only on demand</tspan>.</text>
+  <text x="70" y="1010" fill="#a8a8b0" font-size="11">Correlation and search are graph + vector maths — the bill scales with new documents, not graph size.</text>
+</svg>
