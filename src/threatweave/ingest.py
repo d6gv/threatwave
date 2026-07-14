@@ -10,6 +10,7 @@ the others.
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from typing import Any
 
 from threatweave.connectors.document import DocumentIntel
@@ -20,10 +21,11 @@ from threatweave.models.graph import (
     Node,
     RelationType,
     campaign_node_id,
+    ioc_node_id,
     sector_node_id,
     ttp_node_id,
 )
-from threatweave.models.ioc import Actor, Campaign
+from threatweave.models.ioc import IOC, Actor, Campaign
 from threatweave.models.normalize import normalize_sector, sector_display
 from threatweave.vector.base import VectorStore, content_hash
 
@@ -53,6 +55,29 @@ def _embed_and_cache(
     logger.info("stored embedding for %s", entity_id)
 
 
+def ingest_feed(store: GraphStore, iocs: Sequence[IOC], *, source: str) -> int:
+    """Ingest structured-feed IOCs into ``store`` in a single batch. No AI.
+
+    Structured feeds (abuse.ch URLhaus/MalwareBazaar/Feodo, ...) already carry
+    their indicators in fields, so this path is pure normalization + a batched,
+    idempotent ``MERGE``: it never calls the LLM extractor and never computes
+    embeddings. Re-ingesting the same feed neither duplicates nodes nor spends
+    tokens. Cross-source correlation is automatic — the same indicator from two
+    feeds resolves to the same deterministic node id.
+
+    Args:
+        store: Destination graph store.
+        iocs: Normalized indicators produced by a connector's ``fetch_iocs()``.
+        source: Provenance label, used for logging.
+
+    Returns:
+        The number of distinct IOC nodes written this batch.
+    """
+    nodes = store.upsert_iocs(iocs)
+    logger.info("ingested %d IOC nodes from feed %r", len(nodes), source)
+    return len(nodes)
+
+
 def ingest_otx_payload(
     store: GraphStore,
     payload: dict[str, Any],
@@ -61,19 +86,29 @@ def ingest_otx_payload(
     provider: LLMProvider | None = None,
     vector_store: VectorStore | None = None,
 ) -> int:
-    """Ingest a raw OTX pulses payload into ``store``.
+    """Ingest a raw OTX pulses payload into ``store`` using batched writes.
+
+    All indicators across all pulses are written with a single batched
+    ``upsert_iocs``, and all IOC->Campaign ``PART_OF`` links with a single
+    batched ``add_edges`` — not one transaction per IOC.
 
     Args:
         store: Destination graph store.
         payload: Parsed OTX pulses response.
         source: Provenance label stamped on ingested IOCs.
         provider: Optional LLM provider; when given with ``vector_store``, each
-            pulse's descriptive text is embedded for semantic similarity.
+            pulse's descriptive text is embedded for semantic similarity. The
+            scheduled feed path leaves both unset (``OTX_EMBED_DESCRIPTIONS=false``),
+            so ingestion makes zero AI calls; passing them in is the opt-in that
+            preserves semantic search over feed descriptions.
         vector_store: Optional vector store for embeddings.
 
     Returns:
         The number of IOC nodes written (counting each indicator once per pulse).
     """
+    all_iocs: list[IOC] = []
+    edges: list[tuple[str, str, RelationType]] = []
+    embed_jobs: list[tuple[str, str]] = []
     written = 0
     for pulse in payload.get("results", []):
         campaign_name = pulse.get("name") or pulse.get("id")
@@ -83,9 +118,9 @@ def ingest_otx_payload(
 
         # Reuse the connector's normalization on this single pulse.
         for ioc in normalize_indicators({"results": [pulse]}, source=source):
-            ioc_node = store.upsert_ioc(ioc)
+            all_iocs.append(ioc)
             if campaign_node is not None:
-                store.add_edge(ioc_node.id, campaign_node.id, RelationType.PART_OF)
+                edges.append((ioc_node_id(ioc), campaign_node.id, RelationType.PART_OF))
             written += 1
 
         if campaign_node is not None:
@@ -93,7 +128,13 @@ def ingest_otx_payload(
             pulse_text = "\n".join(
                 part for part in (pulse.get("name"), pulse.get("description")) if part
             )
-            _embed_and_cache(vector_store, provider, campaign_node.id, pulse_text)
+            embed_jobs.append((campaign_node.id, pulse_text))
+
+    # Batched writes: nodes first (edge endpoints must exist), then edges.
+    store.upsert_iocs(all_iocs)
+    store.add_edges(edges)
+    for campaign_id, text in embed_jobs:
+        _embed_and_cache(vector_store, provider, campaign_id, text)
 
     logger.info("ingested %d IOC nodes from OTX payload", written)
     return written
@@ -166,4 +207,4 @@ def ingest_document(
 
 
 # ``campaign_node_id`` is re-exported for callers that need the hub id.
-__all__ = ["ingest_otx_payload", "ingest_document", "campaign_node_id"]
+__all__ = ["ingest_feed", "ingest_otx_payload", "ingest_document", "campaign_node_id"]

@@ -6,13 +6,46 @@ from typing import Any
 
 from threatweave.correlation.correlate import correlate
 from threatweave.graph.memory import InMemoryGraphStore
-from threatweave.ingest import ingest_otx_payload
+from threatweave.ingest import ingest_feed, ingest_otx_payload
 from threatweave.models.graph import RelationType, ioc_node_id
 from threatweave.models.ioc import IOC, IOCType
 
 
 def _ioc(value: str, ioc_type: IOCType) -> IOC:
     return IOC(value=value, type=ioc_type)
+
+
+def test_ingest_feed_writes_iocs_in_batch(store: InMemoryGraphStore) -> None:
+    iocs = [
+        _ioc("203.0.113.10", IOCType.IPV4),
+        _ioc("evil.example", IOCType.DOMAIN),
+        _ioc("http://evil.example/x", IOCType.URL),
+    ]
+
+    written = ingest_feed(store, iocs, source="urlhaus")
+
+    assert written == 3
+    assert all(store.get_node(ioc_node_id(i)) is not None for i in iocs)
+
+
+def test_ingest_feed_is_idempotent(store: InMemoryGraphStore) -> None:
+    iocs = [_ioc("203.0.113.10", IOCType.IPV4), _ioc("evil.example", IOCType.DOMAIN)]
+
+    ingest_feed(store, iocs, source="feodo")
+    ingest_feed(store, iocs, source="feodo")  # re-ingest: no duplicates
+
+    # Neighbourhood of a re-ingested node still holds exactly that one node.
+    sub = store.neighborhood(ioc_node_id(iocs[0]))
+    assert len(sub.nodes) == 1
+
+
+def test_ingest_feed_cross_source_shares_nodes(store: InMemoryGraphStore) -> None:
+    # The same IP from two feeds must collapse onto a single node id.
+    ip = _ioc("203.0.113.10", IOCType.IPV4)
+    ingest_feed(store, [ip], source="feodo")
+    ingest_feed(store, [ip], source="otx")
+
+    assert store.get_node(ioc_node_id(ip)) is not None
 
 
 def test_correlate_unknown_ioc_returns_empty(store: InMemoryGraphStore) -> None:
