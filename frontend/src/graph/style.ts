@@ -91,8 +91,11 @@ export function buildStylesheet(): cytoscape.StylesheetStyle[] {
         "text-max-width": "120px",
         width: 26,
         height: 26,
-        "border-width": 2,
+        "border-width": 1.5,
         "border-color": token("--node-border", "#0e0f13"),
+        // Kill Cytoscape's built-in selection/active overlay so it never stacks
+        // on top of our own subtle hover/selected halos below.
+        "overlay-opacity": 0,
         "transition-property":
           "background-color, border-color, border-width, underlay-opacity",
         // Cytoscape wants a unit-bearing time string at runtime, but the (older)
@@ -106,25 +109,39 @@ export function buildStylesheet(): cytoscape.StylesheetStyle[] {
       selector: 'node[kind = "actor"]',
       style: {
         "border-color": token("--node-border-actor", "#ff5c5c"),
-        "border-width": 2.5,
+        "border-width": 1.5,
       },
     },
     {
+      // Hover: a soft red glow, no border change. Small fixed padding so the
+      // halo looks the same on large (campaign) and small (IOC) nodes.
       selector: "node.hover",
       style: {
         "underlay-color": token("--node-halo", "#e84850"),
-        "underlay-opacity": 0.25,
-        "underlay-padding": 6,
+        "underlay-opacity": 0.12,
+        "underlay-padding": 3,
       },
     },
     {
+      // Selected: a thin white accent border plus a slightly stronger (but still
+      // subtle) halo. The single underlay layer never adds to hover's — it
+      // replaces it.
       selector: "node.selected",
       style: {
         "border-color": token("--node-selected", "#ffffff"),
-        "border-width": 4,
+        "border-width": 2,
         "underlay-color": token("--node-halo", "#e84850"),
-        "underlay-opacity": 0.35,
-        "underlay-padding": 8,
+        "underlay-opacity": 0.2,
+        "underlay-padding": 4,
+      },
+    },
+    {
+      // Precedence: when a node is both hovered and selected, selected wins.
+      // Re-assert its halo (declared after `.hover`) so the two never stack.
+      selector: "node.selected.hover",
+      style: {
+        "underlay-opacity": 0.2,
+        "underlay-padding": 4,
       },
     },
     {
