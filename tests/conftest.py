@@ -10,11 +10,25 @@ from typing import Any
 
 import pytest
 
+from threatweave.api.security import limiter
+from threatweave.config import get_settings
 from threatweave.graph.memory import InMemoryGraphStore
 from threatweave.llm.base import TTP, ExtractionResult, LLMProvider
 from threatweave.models.graph import Subgraph
 
 _SAMPLES = Path(__file__).resolve().parents[1] / "data" / "samples"
+
+
+@pytest.fixture(autouse=True)
+def _isolate_api_state() -> None:
+    """Reset shared API state so tests don't leak into each other.
+
+    The rate limiter and the settings cache are process-global singletons; a
+    stale rate-limit bucket or cached ``Settings`` would otherwise make API
+    tests order-dependent.
+    """
+    get_settings.cache_clear()
+    limiter.reset()
 
 
 class FakeProvider(LLMProvider):

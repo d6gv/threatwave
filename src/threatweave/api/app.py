@@ -8,8 +8,11 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from threatweave.api.routes import router
+from threatweave.api.security import limiter
 from threatweave.config import Settings, get_settings
 from threatweave.graph.base import GraphStore
 from threatweave.graph.factory import build_store
@@ -91,6 +94,12 @@ def create_app(
     app.state.store = store
     app.state.vector_store = vector_store
     app.state.provider = provider
+
+    # Rate limiting (slowapi): the limiter must live on app.state, and 429s are
+    # turned into a JSON response by the shared handler.
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
     app.include_router(router)
     return app
 

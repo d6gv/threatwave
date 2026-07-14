@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 
+from threatweave.api.security import limiter, rate_limit, require_api_key
 from threatweave.config import get_settings
 from threatweave.correlation.correlate import correlate
 from threatweave.correlation.similar import similar
@@ -14,6 +15,10 @@ from threatweave.models.graph import Subgraph
 from threatweave.vector.base import VectorStore
 
 router = APIRouter()
+
+# Applied to every /api/* route: casual API-key gating plus a per-client rate
+# limit. /health is intentionally left open as an unauthenticated liveness probe.
+_api_deps = [Depends(require_api_key)]
 
 
 def _store(request: Request) -> GraphStore:
@@ -53,7 +58,8 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@router.get("/api/correlate", response_model=Subgraph)
+@router.get("/api/correlate", response_model=Subgraph, dependencies=_api_deps)
+@limiter.limit(rate_limit)
 def get_correlate(
     request: Request,
     ioc: str = Query(..., description="Indicator value: IP, domain, hash or URL."),
@@ -77,7 +83,8 @@ def get_correlate(
     return subgraph
 
 
-@router.get("/api/similar", response_model=list[SimilarNeighbor])
+@router.get("/api/similar", response_model=list[SimilarNeighbor], dependencies=_api_deps)
+@limiter.limit(rate_limit)
 def get_similar(
     request: Request,
     id: str = Query(..., description="Entity id, e.g. 'campaign:<name>'."),
@@ -110,7 +117,8 @@ def get_similar(
     ]
 
 
-@router.get("/api/narrative", response_model=NarrativeResponse)
+@router.get("/api/narrative", response_model=NarrativeResponse, dependencies=_api_deps)
+@limiter.limit(rate_limit)
 def get_narrative(
     request: Request,
     ioc: str = Query(..., description="Indicator value: IP, domain, hash or URL."),

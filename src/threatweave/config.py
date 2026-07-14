@@ -117,6 +117,14 @@ class Settings(BaseSettings):
     api_host: str = Field(default="0.0.0.0", alias="API_HOST")
     api_port: int = Field(default=8000, alias="API_PORT")
 
+    # Casual API-key gating for the public API. NOT a strong secret: the SPA
+    # ships it in its bundle (VITE_API_KEY), so treat it as drive-by gating, not
+    # real authentication. Empty (the default, and the in-memory demo) disables
+    # the check so the demo runs without keys. Real protection is the rate limit.
+    api_key: str = Field(default="", alias="API_KEY")
+    # Per-client rate limit for the /api/* routes, in slowapi syntax.
+    api_rate_limit: str = Field(default="60/minute", alias="API_RATE_LIMIT")
+
     # Graph backend selection. "neo4j" (default) uses the running database;
     # "memory" uses the in-process store, handy for a no-Docker demo.
     graph_backend: str = Field(default="neo4j", alias="GRAPH_BACKEND")
