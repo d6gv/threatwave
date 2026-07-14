@@ -1,0 +1,38 @@
+[
+  {
+    "ip_address": "203.0.113.20",
+    "port": 443,
+    "status": "online",
+    "hostname": null,
+    "as_number": 64500,
+    "as_name": "SYNTHETIC-AS",
+    "country": "ZZ",
+    "first_seen": "2026-01-05 08:00:00",
+    "last_online": "2026-01-06",
+    "malware": "SyntheticBot"
+  },
+  {
+    "ip_address": "198.51.100.30",
+    "port": 8080,
+    "status": "online",
+    "hostname": null,
+    "as_number": 64501,
+    "as_name": "SYNTHETIC-AS-2",
+    "country": "ZZ",
+    "first_seen": "2026-01-05 09:30:00",
+    "last_online": "2026-01-06",
+    "malware": "SyntheticBot"
+  },
+  {
+    "ip_address": "203.0.113.20",
+    "port": 443,
+    "status": "online",
+    "hostname": null,
+    "as_number": 64500,
+    "as_name": "SYNTHETIC-AS",
+    "country": "ZZ",
+    "first_seen": "2026-01-05 08:00:00",
+    "last_online": "2026-01-06",
+    "malware": "SyntheticBot"
+  }
+]

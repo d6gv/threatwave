@@ -1,0 +1,38 @@
+{
+  "100001": [
+    {
+      "id": "100001",
+      "urlhaus_reference": "https://urlhaus.abuse.ch/url/100001/",
+      "url": "http://malicious.example/payload.bin",
+      "url_status": "online",
+      "host": "malicious.example",
+      "date_added": "2026-01-05 10:15:00 UTC",
+      "threat": "malware_download",
+      "tags": ["SyntheticLoader", "elf"]
+    }
+  ],
+  "100002": [
+    {
+      "id": "100002",
+      "urlhaus_reference": "https://urlhaus.abuse.ch/url/100002/",
+      "url": "http://203.0.113.20/gate.php",
+      "url_status": "online",
+      "host": "203.0.113.20",
+      "date_added": "2026-01-05 11:00:00 UTC",
+      "threat": "malware_download",
+      "tags": ["SyntheticBot"]
+    }
+  ],
+  "100003": [
+    {
+      "id": "100003",
+      "urlhaus_reference": "https://urlhaus.abuse.ch/url/100003/",
+      "url": "http://malicious.example/payload.bin",
+      "url_status": "offline",
+      "host": "malicious.example",
+      "date_added": "2026-01-05 12:30:00 UTC",
+      "threat": "malware_download",
+      "tags": ["SyntheticLoader"]
+    }
+  ]
+}

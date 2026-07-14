@@ -86,6 +86,24 @@ def sample_report() -> str:
 
 
 @pytest.fixture
+def urlhaus_payload() -> dict[str, Any]:
+    """The synthetic URLhaus ``json_recent`` response used for offline tests."""
+    return json.loads((_SAMPLES / "urlhaus_recent.json").read_text(encoding="utf-8"))
+
+
+@pytest.fixture
+def malwarebazaar_payload() -> dict[str, Any]:
+    """The synthetic MalwareBazaar ``get_recent`` response used for offline tests."""
+    return json.loads((_SAMPLES / "malwarebazaar_recent.json").read_text(encoding="utf-8"))
+
+
+@pytest.fixture
+def feodo_payload() -> list[dict[str, Any]]:
+    """The synthetic Feodo Tracker ``ipblocklist.json`` used for offline tests."""
+    return json.loads((_SAMPLES / "feodo_ipblocklist.json").read_text(encoding="utf-8"))
+
+
+@pytest.fixture
 def store() -> InMemoryGraphStore:
     """A fresh in-memory graph store."""
     return InMemoryGraphStore()

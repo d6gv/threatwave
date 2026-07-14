@@ -78,6 +78,22 @@ class OTXSettings(BaseSettings):
     base_url: str = "https://otx.alienvault.com/api/v1"
 
 
+class AbuseChSettings(BaseSettings):
+    """Settings for the abuse.ch ingestion connectors.
+
+    abuse.ch gates its feeds behind a single account ``Auth-Key``, shared across
+    URLhaus and MalwareBazaar; Feodo Tracker's blocklist is public. Base URLs are
+    overridable so the connectors can be pointed at a mock in tests.
+    """
+
+    model_config = _section_config("ABUSECH_")
+
+    auth_key: str = ""
+    urlhaus_base_url: str = "https://urlhaus.abuse.ch"
+    malwarebazaar_base_url: str = "https://mb-api.abuse.ch/api/v1"
+    feodo_base_url: str = "https://feodotracker.abuse.ch"
+
+
 class LLMSettings(BaseSettings):
     """Settings for the pluggable LLM provider.
 
@@ -138,6 +154,7 @@ class Settings(BaseSettings):
     neo4j: Neo4jSettings = Field(default_factory=Neo4jSettings)
     postgres: PostgresSettings = Field(default_factory=PostgresSettings)
     otx: OTXSettings = Field(default_factory=OTXSettings)
+    abusech: AbuseChSettings = Field(default_factory=AbuseChSettings)
     llm: LLMSettings = Field(default_factory=LLMSettings)
 
 
